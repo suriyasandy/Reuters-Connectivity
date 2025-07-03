@@ -1,21 +1,21 @@
 import requests
+import json
 
-# Replace with your credentials
-auth_url = "https://api.refinitiv.com/auth/oauth2/v1/token"
+url = "https://<your-crd-api-endpoint>/login"  # Replace with actual URL
+
+payload = {
+    "username": "your_username",
+    "password": "your_password"
+}
+
 headers = {
-    "Content-Type": "application/x-www-form-urlencoded"
-}
-data = {
-    "grant_type": "password",
-    "username": "YOUR_USERNAME",
-    "password": "YOUR_PASSWORD",
-    "client_id": "YOUR_APP_KEY",  # App Key from Refinitiv Developer Portal
-    "scope": "trapi"  # Depends on your use case
+    "Content-Type": "application/json"
 }
 
-response = requests.post(auth_url, headers=headers, data=data)
+response = requests.post(url, headers=headers, data=json.dumps(payload))
+
 if response.status_code == 200:
-    access_token = response.json()['access_token']
-    print("✅ Authenticated successfully!")
+    print("✅ Login successful")
+    print("Response:", response.json())
 else:
-    print("❌ Authentication failed:", response.text)
+    print("❌ Login failed:", response.status_code, response.text)
