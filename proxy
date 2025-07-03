@@ -1,35 +1,45 @@
 import requests
 import json
 
-# 🔐 Replace with your actual values
-proxy_host = "your.proxy.hostname"
-proxy_port = "your_proxy_port"  # e.g. 8080
-auth_url = "https://api.crdmetals.com/auth/token"  # change to actual token URL
+# ====== Replace these with your actual details ======
+url_host = "https://your-api-host.com"  # Same as `urlHost` in Java
+auth_url = f"{url_host}/Authentication/RequestToken"
 
-# Proxy config (no auth on proxy assumed)
+username = "your_username"
+password = "your_password"
+
+proxy_host = "your.proxy.host"
+proxy_port = "your_proxy_port"
+
+# ==============================================
+
+# Build proxies dictionary
 proxies = {
     "http": f"http://{proxy_host}:{proxy_port}",
     "https": f"http://{proxy_host}:{proxy_port}"
 }
 
-# Payload for API login
+# Build JSON payload
 payload = {
-    "username": "your_api_username",
-    "password": "your_api_password"
+    "credentials": {
+        "Username": username,
+        "Password": password
+    }
 }
 
 headers = {
-    "Content-Type": "application/json"
+    "Content-Type": "application/json; charset=UTF-8"
 }
 
 try:
     response = requests.post(auth_url, headers=headers, json=payload, proxies=proxies)
 
     if response.status_code == 200:
-        token = response.json().get("access_token")
-        print("✅ Auth successful. Access Token:", token)
+        json_response = response.json()
+        session_token = json_response.get("value")
+        print("✅ Session Token (expires in 24 hours):", session_token)
     else:
         print("❌ Auth failed:", response.status_code, response.text)
 
 except requests.exceptions.RequestException as e:
-    print("❌ Connection error:", e)
+    print("❌ Request failed:", e)
