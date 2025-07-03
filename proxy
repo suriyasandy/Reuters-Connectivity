@@ -1,0 +1,35 @@
+import requests
+import json
+
+# 🔐 Replace with your actual values
+proxy_host = "your.proxy.hostname"
+proxy_port = "your_proxy_port"  # e.g. 8080
+auth_url = "https://api.crdmetals.com/auth/token"  # change to actual token URL
+
+# Proxy config (no auth on proxy assumed)
+proxies = {
+    "http": f"http://{proxy_host}:{proxy_port}",
+    "https": f"http://{proxy_host}:{proxy_port}"
+}
+
+# Payload for API login
+payload = {
+    "username": "your_api_username",
+    "password": "your_api_password"
+}
+
+headers = {
+    "Content-Type": "application/json"
+}
+
+try:
+    response = requests.post(auth_url, headers=headers, json=payload, proxies=proxies)
+
+    if response.status_code == 200:
+        token = response.json().get("access_token")
+        print("✅ Auth successful. Access Token:", token)
+    else:
+        print("❌ Auth failed:", response.status_code, response.text)
+
+except requests.exceptions.RequestException as e:
+    print("❌ Connection error:", e)
