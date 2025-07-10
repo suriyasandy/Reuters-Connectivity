@@ -1,0 +1,16 @@
+import zipfile
+import pandas as pd
+
+with zipfile.ZipFile("extraction_result.zip", "r") as zip_ref:
+    zip_ref.extractall("extracted_data")  # creates a folder with contents
+
+# List files and read CSV
+import os
+files = os.listdir("extracted_data")
+print("Files extracted:", files)
+
+# Assuming there's one CSV/TSV file
+file_path = os.path.join("extracted_data", files[0])
+df = pd.read_csv(file_path, delimiter="\t")  # change delimiter if needed
+
+print(df.head())
