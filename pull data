@@ -1,0 +1,27 @@
+import time
+import requests
+
+job_id = "your_job_id_here"
+status_url = f"https://api.crdmetals.com/Extraction/Status/{job_id}"  # Adjust if needed
+
+headers = {
+    "Authorization": f"Bearer {access_token}"
+}
+
+proxies = {
+    "http": "http://your.proxy.host:port",
+    "https": "http://your.proxy.host:port"
+}
+
+# Poll until job is completed
+while True:
+    resp = requests.get(status_url, headers=headers, proxies=proxies)
+    status = resp.json().get("Status")
+    print("Job Status:", status)
+
+    if status == "Completed":
+        break
+    elif status in ["Failed", "Cancelled"]:
+        raise Exception(f"Job failed or cancelled: {status}")
+    
+    time.sleep(5)  # wait and retry
