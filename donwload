@@ -1,0 +1,9 @@
+result_url = f"https://api.crdmetals.com/Extraction/Result/{job_id}"  # Adjust path if needed
+
+response = requests.get(result_url, headers=headers, proxies=proxies)
+
+# Save as ZIP file
+with open("extraction_result.zip", "wb") as f:
+    f.write(response.content)
+
+print("✅ Compressed result saved as extraction_result.zip")
