@@ -1,0 +1,27 @@
+import pycurl
+import io
+
+# Your cert and key files
+CERT_FILE = "cert.pem"
+KEY_FILE = "key.pem"
+SFTP_URL = "sftp://sftp.bloomberg.com/path/to/your/file.txt"
+
+# Output buffer
+buffer = io.BytesIO()
+
+c = pycurl.Curl()
+c.setopt(c.URL, SFTP_URL)
+c.setopt(c.SSLKEY, KEY_FILE)
+c.setopt(c.SSLCERT, CERT_FILE)
+c.setopt(c.WRITEFUNCTION, buffer.write)
+c.setopt(c.SSL_VERIFYPEER, 0)  # Set to 1 if you verify Bloomberg's CA
+c.setopt(c.SSL_VERIFYHOST, 0)  # Set to 2 for strict hostname checking
+
+c.perform()
+status_code = c.getinfo(pycurl.RESPONSE_CODE)
+c.close()
+
+# Get response
+data = buffer.getvalue()
+print("Status:", status_code)
+print("Data:", data.decode())
