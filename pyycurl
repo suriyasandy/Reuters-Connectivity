@@ -70,3 +70,26 @@ except pycurl.error as e:
     print("❌ Error:", e)
 finally:
     c.close()
+
+
+import subprocess
+
+cert_file = "/path/to/cert.pem"
+key_file = "/path/to/key.pem"
+sftp_url = "sftp://sftp.bloomberg.com:22/"  # No filename, just base directory
+
+cmd = [
+    "curl",
+    "--cert", cert_file,
+    "--key", key_file,
+    sftp_url
+]
+
+result = subprocess.run(cmd, capture_output=True, text=True)
+
+if result.returncode == 0:
+    print("✅ Connected! Remote directory listing:")
+    print(result.stdout)
+else:
+    print("❌ Connection failed:")
+    print(result.stderr)
