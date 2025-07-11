@@ -1,0 +1,60 @@
+import ssl
+import requests
+from cryptography.hazmat.primitives.serialization import pkcs12
+from cryptography.hazmat.backends import default_backend
+import tempfile
+
+def create_ssl_context_from_p12(p12_path, p12_password):
+    with open(p12_path, 'rb') as f:
+        p12_data = f.read()
+
+    # Load .p12 contents
+    private_key, certificate, additional_certs = pkcs12.load_key_and_certificates(
+        p12_data, p12_password.encode(), backend=default_backend()
+    )
+
+    # Write them to temporary files
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pem") as cert_file, \
+         tempfile.NamedTemporaryFile(delete=False, suffix=".key") as key_file:
+        cert_file.write(certificate.public_bytes(encoding=ssl.Encoding.PEM))
+        cert_file.flush()
+        key_file.write(private_key.private_bytes(
+            encoding=ssl.Encoding.PEM,
+            format=ssl.PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=ssl.NoEncryption()
+        ))
+        key_file.flush()
+
+        # Create SSL context
+        context = ssl.create_default_context()
+        context.load_cert_chain(certfile=cert_file.name, keyfile=key_file.name)
+
+    return context
+
+# Set paths and password
+p12_path = 'path/to/your/legacy.p12'
+p12_password = 'your_password'
+
+# Create custom SSL context
+ssl_context = create_ssl_context_from_p12(p12_path, p12_password)
+
+# Use in requests
+from urllib3 import poolmanager
+import requests.adapters
+
+class SSLAdapter(requests.adapters.HTTPAdapter):
+    def __init__(self, ssl_context=None, **kwargs):
+        self.ssl_context = ssl_context
+        super().__init__(**kwargs)
+
+    def init_poolmanager(self, *args, **kwargs):
+        kwargs['ssl_context'] = self.ssl_context
+        self.poolmanager = poolmanager.PoolManager(*args, **kwargs)
+
+# Mount adapter
+session = requests.Session()
+session.mount("https://", SSLAdapter(ssl_context))
+
+# Make request
+response = session.get("https://your-secure-endpoint.com")
+print(response.status_code)
