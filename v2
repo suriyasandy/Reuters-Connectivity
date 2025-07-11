@@ -1,0 +1,35 @@
+from ftplib import FTP_TLS
+import ssl
+from cryptography.hazmat.primitives.serialization import pkcs12, Encoding, PrivateFormat, NoEncryption
+from cryptography.hazmat.backends import default_backend
+import tempfile
+
+# Load .p12
+with open("client.p12", "rb") as f:
+    p12_data = f.read()
+
+private_key, cert, _ = pkcs12.load_key_and_certificates(p12_data, b"password", backend=default_backend())
+
+with tempfile.NamedTemporaryFile(delete=False, suffix=".pem") as cert_file, \
+     tempfile.NamedTemporaryFile(delete=False, suffix=".key") as key_file:
+
+    cert_file.write(cert.public_bytes(Encoding.PEM))
+    key_file.write(private_key.private_bytes(
+        encoding=Encoding.PEM,
+        format=PrivateFormat.TraditionalOpenSSL,
+        encryption_algorithm=NoEncryption()
+    ))
+
+    cert_file.flush()
+    key_file.flush()
+
+    context = ssl.create_default_context()
+    context.load_cert_chain(certfile=cert_file.name, keyfile=key_file.name)
+
+# Connect to FTPS
+ftps = FTP_TLS(context=context)
+ftps.connect("ftp.bloomberg.com", 21)
+ftps.login()  # If cert-only, can be empty
+ftps.prot_p()  # Enable secure data connection
+print(ftps.nlst())  # List directory
+ftps.quit()
