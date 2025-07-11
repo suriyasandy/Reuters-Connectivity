@@ -1,0 +1,26 @@
+from cryptography.hazmat.primitives.serialization import pkcs12, Encoding, PrivateFormat, NoEncryption
+from cryptography.hazmat.backends import default_backend
+
+# Load .p12 file
+with open("legacy.p12", "rb") as f:
+    p12_data = f.read()
+
+private_key, certificate, _ = pkcs12.load_key_and_certificates(
+    p12_data, b"your_password", backend=default_backend()
+)
+
+# Save private key
+with open("key.pem", "wb") as f:
+    f.write(private_key.private_bytes(
+        encoding=Encoding.PEM,
+        format=PrivateFormat.TraditionalOpenSSL,
+        encryption_algorithm=NoEncryption()
+    ))
+
+# Save cert (optional)
+with open("cert.pem", "wb") as f:
+    f.write(certificate.public_bytes(Encoding.PEM))
+
+
+  ssh-keygen -p -m PEM -f key.pem
+  sftp -v -i key.pem dummy@sftp.bloomberg.com
