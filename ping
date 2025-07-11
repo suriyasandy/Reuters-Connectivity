@@ -1,1 +1,17 @@
 curl --proxy http://proxy.yourcompany.com:8080 https://ftp.bloomberg.com
+
+
+import subprocess
+
+cmd = [
+    "curl",
+    "--proxy", "http://proxy.yourcompany.com:8080",
+    "https://ftp.bloomberg.com"
+]
+
+result = subprocess.run(cmd, capture_output=True, text=True)
+
+if result.returncode == 0:
+    print("✅ Proxy working, host is reachable")
+else:
+    print("❌ Failed via proxy:\n", result.stderr)
