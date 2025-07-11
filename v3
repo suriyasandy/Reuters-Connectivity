@@ -34,20 +34,20 @@ with tempfile.NamedTemporaryFile(delete=False, suffix=".pem") as cert_file, \
 # Run curl with proxy + certs
 ftp_url = "ftps://ftp.bloomberg.com/"  # Adjust path if needed
 
+import subprocess
+
 cmd = [
     "curl",
-    "--proxy", proxy_url,
-    "--cert", cert_path,
-    "--key", key_path,
-    "--ftp-ssl",
-    "--list-only",  # Only list files
-    ftp_url
+    "--socks5-hostname", "dlcproxy.bloomberg.com:30206",
+    "--cert", "cert.pem",
+    "--key", "key.pem",
+    "ftps://ftp.bloomberg.com"
 ]
 
-# Run the command
 result = subprocess.run(cmd, capture_output=True, text=True)
 
 if result.returncode == 0:
-    print("✅ FTPS Directory Listing:\n", result.stdout)
+    print("✅ FTPS via SOCKS proxy:\n", result.stdout)
 else:
+    print("❌ Error:\n", result.stderr)
     print("❌ Error:\n", result.stderr)
