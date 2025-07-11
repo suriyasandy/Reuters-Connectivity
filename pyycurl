@@ -1,27 +1,72 @@
+from cryptography.hazmat.primitives.serialization import pkcs12, Encoding, PrivateFormat, NoEncryption
+from cryptography.hazmat.backends import default_backend
+import tempfile
+
+# Input
+p12_path = "legacy.p12"
+p12_password = b"your_password"  # byte string
+
+# Read and parse the .p12
+with open(p12_path, "rb") as f:
+    p12_data = f.read()
+
+private_key, certificate, additional_certs = pkcs12.load_key_and_certificates(
+    p12_data, p12_password, backend=default_backend()
+)
+
+# Save to PEM files
+with tempfile.NamedTemporaryFile(delete=False, suffix=".pem") as cert_file, \
+     tempfile.NamedTemporaryFile(delete=False, suffix=".key") as key_file:
+
+    cert_file.write(certificate.public_bytes(encoding=Encoding.PEM))
+    key_file.write(private_key.private_bytes(
+        encoding=Encoding.PEM,
+        format=PrivateFormat.TraditionalOpenSSL,
+        encryption_algorithm=NoEncryption()
+    ))
+
+    cert_file.flush()
+    key_file.flush()
+
+    cert_path = cert_file.name
+    key_path = key_file.name
+
+print(f"✅ cert.pem: {cert_path}")
+print(f"✅ key.pem: {key_path}")
+
+#Step2
 import pycurl
 import io
 
-# Your cert and key files
-CERT_FILE = "cert.pem"
-KEY_FILE = "key.pem"
-SFTP_URL = "sftp://sftp.bloomberg.com/path/to/your/file.txt"
+SFTP_URL = "sftp://sftp.bloomberg.com/your/file/path"  # Update this
+USERNAME = "any"  # Bloomberg often accepts any value if using cert auth
 
-# Output buffer
+# Use extracted PEM files from step 1
+CERT_FILE = cert_path
+KEY_FILE = key_path
+
+# Setup output buffer
 buffer = io.BytesIO()
 
+# SFTP via pycurl
 c = pycurl.Curl()
 c.setopt(c.URL, SFTP_URL)
+c.setopt(c.USERNAME, USERNAME)  # Some servers require any placeholder username
 c.setopt(c.SSLKEY, KEY_FILE)
 c.setopt(c.SSLCERT, CERT_FILE)
+c.setopt(c.SSH_AUTH_TYPES, pycurl.SSH_AUTH_PUBLICKEY)  # Sometimes optional
 c.setopt(c.WRITEFUNCTION, buffer.write)
-c.setopt(c.SSL_VERIFYPEER, 0)  # Set to 1 if you verify Bloomberg's CA
-c.setopt(c.SSL_VERIFYHOST, 0)  # Set to 2 for strict hostname checking
 
-c.perform()
-status_code = c.getinfo(pycurl.RESPONSE_CODE)
-c.close()
+# Optional: skip CA verification for testing
+c.setopt(c.SSL_VERIFYPEER, 0)
+c.setopt(c.SSL_VERIFYHOST, 0)
 
-# Get response
-data = buffer.getvalue()
-print("Status:", status_code)
-print("Data:", data.decode())
+try:
+    c.perform()
+    status = c.getinfo(pycurl.RESPONSE_CODE)
+    print(f"✅ SFTP response code: {status}")
+    print("📄 File content:\n", buffer.getvalue().decode())
+except pycurl.error as e:
+    print("❌ Error:", e)
+finally:
+    c.close()
