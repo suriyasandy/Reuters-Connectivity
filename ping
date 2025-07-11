@@ -1,0 +1,1 @@
+curl --proxy http://proxy.yourcompany.com:8080 https://ftp.bloomberg.com
