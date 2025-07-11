@@ -43,3 +43,11 @@ session.mount('https://', SSLAdapter(ssl_context))
 response = session.get('https://your-secure-url.com')
 print(response.status_code)
 print(response.text)
+
+from OpenSSL import crypto
+
+with open("your.p12", "rb") as f:
+    p12_data = f.read()
+
+p12 = crypto.load_pkcs12(p12_data, b"your_password")
+print("✅ Successfully loaded .p12")
