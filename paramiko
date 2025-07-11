@@ -1,0 +1,32 @@
+import paramiko
+
+# Configuration
+hostname = "sftp.yourserver.com"
+port = 22
+username = "your_username"
+private_key_path = "/path/to/your/key_file.key"  # OpenSSH-format key
+
+# Step 1: Load the private key
+key = paramiko.RSAKey.from_private_key_file(private_key_path)
+
+# Step 2: Connect to the server
+transport = paramiko.Transport((hostname, port))
+transport.connect(username=username, pkey=key)
+
+# Step 3: Start SFTP session
+sftp = paramiko.SFTPClient.from_transport(transport)
+
+# Step 4: List files or do any file operation
+print("Files on server:")
+for file in sftp.listdir('.'):
+    print(file)
+
+# Optional: Download a file
+# sftp.get("remote_filename.txt", "local_filename.txt")
+
+# Optional: Upload a file
+# sftp.put("local_file.txt", "remote_file.txt")
+
+# Step 5: Close connection
+sftp.close()
+transport.close()
