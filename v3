@@ -1,0 +1,53 @@
+import subprocess
+import tempfile
+from cryptography.hazmat.primitives.serialization import pkcs12, Encoding, PrivateFormat, NoEncryption
+from cryptography.hazmat.backends import default_backend
+
+# Proxy details
+proxy_host = "http://proxy.yourcompany.com"
+proxy_port = "8080"
+proxy_url = f"{proxy_host}:{proxy_port}"
+
+# Load .p12 file
+with open("client.p12", "rb") as f:
+    p12_data = f.read()
+
+private_key, cert, _ = pkcs12.load_key_and_certificates(p12_data, b"password", backend=default_backend())
+
+# Save cert and key to temp files
+with tempfile.NamedTemporaryFile(delete=False, suffix=".pem") as cert_file, \
+     tempfile.NamedTemporaryFile(delete=False, suffix=".key") as key_file:
+
+    cert_file.write(cert.public_bytes(Encoding.PEM))
+    key_file.write(private_key.private_bytes(
+        encoding=Encoding.PEM,
+        format=PrivateFormat.TraditionalOpenSSL,
+        encryption_algorithm=NoEncryption()
+    ))
+
+    cert_file.flush()
+    key_file.flush()
+
+    cert_path = cert_file.name
+    key_path = key_file.name
+
+# Run curl with proxy + certs
+ftp_url = "ftps://ftp.bloomberg.com/"  # Adjust path if needed
+
+cmd = [
+    "curl",
+    "--proxy", proxy_url,
+    "--cert", cert_path,
+    "--key", key_path,
+    "--ftp-ssl",
+    "--list-only",  # Only list files
+    ftp_url
+]
+
+# Run the command
+result = subprocess.run(cmd, capture_output=True, text=True)
+
+if result.returncode == 0:
+    print("✅ FTPS Directory Listing:\n", result.stdout)
+else:
+    print("❌ Error:\n", result.stderr)
