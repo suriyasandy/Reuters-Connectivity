@@ -1,0 +1,15 @@
+import requests
+
+proxies = {
+    'http': 'socks5h://dlcproxy.bloomberg.com:30206',
+    'https': 'socks5h://dlcproxy.bloomberg.com:30206'
+}
+
+response = requests.get(
+    'https://ftp.bloomberg.com',
+    proxies=proxies,
+    cert=('cert.pem', 'key.pem')
+)
+
+print(response.status_code)
+print(response.text)
