@@ -1,0 +1,3 @@
+curl -v --cert cert.pem --key key.pem https://sftp.bloomberg.com
+optipn2
+curl -v --cert cert.pem --key key.pem ftps://sftp.bloomberg.com --ftp-ssl
