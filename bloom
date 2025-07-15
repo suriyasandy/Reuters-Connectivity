@@ -1,0 +1,56 @@
+import requests
+import tempfile
+from cryptography.hazmat.primitives.serialization import pkcs12, Encoding, PrivateFormat, NoEncryption
+from cryptography.hazmat.backends import default_backend
+
+# File and password
+p12_file_path = "keystore.p12"
+p12_password = b"your_p12_password"  # bytes!
+
+# Proxy configuration
+proxy_host = "proxy.example.com"
+proxy_port = "8080"
+proxy_user = "your_proxy_user"
+proxy_pass = "your_proxy_pass"
+
+proxy_url = f"http://{proxy_user}:{proxy_pass}@{proxy_host}:{proxy_port}"
+proxies = {
+    "http": proxy_url,
+    "https": proxy_url
+}
+
+# Load .p12 content
+with open(p12_file_path, "rb") as f:
+    p12_data = f.read()
+
+# Extract certificate and key
+private_key, certificate, additional_certs = pkcs12.load_key_and_certificates(
+    p12_data, p12_password, backend=default_backend()
+)
+
+# Write temporary PEM files
+with tempfile.NamedTemporaryFile(delete=False, suffix=".pem") as cert_file, \
+     tempfile.NamedTemporaryFile(delete=False, suffix=".key") as key_file:
+
+    # Write certificate
+    cert_file.write(certificate.public_bytes(Encoding.PEM))
+    cert_file.flush()
+
+    # Write private key
+    key_file.write(private_key.private_bytes(
+        encoding=Encoding.PEM,
+        format=PrivateFormat.TraditionalOpenSSL,
+        encryption_algorithm=NoEncryption()
+    ))
+    key_file.flush()
+
+    # Send HTTPS request using client cert and proxy
+    response = requests.get(
+        "https://serviceid.bloomberg.com/api",
+        cert=(cert_file.name, key_file.name),
+        proxies=proxies,
+        verify=True  # or False or path to Bloomberg CA bundle
+    )
+
+    print("Status Code:", response.status_code)
+    print("Response Text:", response.text)
