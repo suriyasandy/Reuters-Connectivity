@@ -1,53 +1,43 @@
-import ssl
+from zeep import Client
+from zeep.transports import Transport
 import requests
-import urllib3
-from OpenSSL import crypto
-from urllib3 import poolmanager
 
-class SSLAdapter(requests.adapters.HTTPAdapter):
-    def __init__(self, ssl_context=None, **kwargs):
-        self.ssl_context = ssl_context
-        super().__init__(**kwargs)
+# Cert and key paths
+cert_file = "client_cert.pem"
+key_file = "client_key.pem"
 
-    def init_poolmanager(self, *args, **kwargs):
-        kwargs['ssl_context'] = self.ssl_context
-        self.poolmanager = poolmanager.PoolManager(*args, **kwargs)
+# Proxy
+proxy_host = "proxy.example.com"
+proxy_port = "8080"
+proxy_user = "your_proxy_user"
+proxy_pass = "your_proxy_pass"
 
-def create_ssl_context_from_p12(p12_path, p12_password):
-    # Load the .p12 certificate
-    with open(p12_path, 'rb') as p12_file:
-        p12_data = p12_file.read()
-    p12 = crypto.load_pkcs12(p12_data, p12_password.encode())
+proxy_url = f"http://{proxy_user}:{proxy_pass}@{proxy_host}:{proxy_port}"
 
-    # Extract key and cert
-    cert = crypto.dump_certificate(crypto.FILETYPE_PEM, p12.get_certificate())
-    key = crypto.dump_privatekey(crypto.FILETYPE_PEM, p12.get_privatekey())
+proxies = {
+    "http": proxy_url,
+    "https": proxy_url
+}
 
-    # Create an SSLContext with cert and key
-    context = ssl.create_default_context()
-    context.load_cert_chain(certfile=ssl.MemoryBIO(cert), keyfile=ssl.MemoryBIO(key))
-    return context
-
-# Provide path and password
-p12_file_path = 'path/to/your/legacy.p12'
-p12_password = 'your_password'
-
-# Create custom SSL context
-ssl_context = create_ssl_context_from_p12(p12_file_path, p12_password)
-
-# Use in requests session
+# Create a session with SSL and proxy
 session = requests.Session()
-session.mount('https://', SSLAdapter(ssl_context))
+session.cert = (cert_file, key_file)
+session.proxies = proxies
+session.verify = True  # or path to Bloomberg CA if needed
 
-# Now make a request
-response = session.get('https://your-secure-url.com')
-print(response.status_code)
-print(response.text)
+# Transport with custom session
+transport = Transport(session=session)
 
-from OpenSSL import crypto
+# WSDL file path or URL
+wsdl_path = "file:///absolute/path/to/service.wsdl"  # or https://... if hosted
 
-with open("your.p12", "rb") as f:
-    p12_data = f.read()
+# Create SOAP client
+client = Client(wsdl=wsdl_path, transport=transport)
 
-p12 = crypto.load_pkcs12(p12_data, b"your_password")
-print("✅ Successfully loaded .p12")
+# Print available methods
+print("Available methods:")
+print(client.service)
+
+# Example call (replace with actual method and args)
+# result = client.service.YourSOAPMethod(param1=value1, param2=value2)
+# print(result)
