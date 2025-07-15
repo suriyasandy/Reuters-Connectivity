@@ -1,0 +1,10 @@
+with open("method_list.txt", "w") as f:
+    for service in client.wsdl.services.values():
+        f.write(f"Service: {service.name}\n")
+        for port in service.ports.values():
+            f.write(f"  Port: {port.name}\n")
+            operations = port.binding._operations
+            for name, operation in operations.items():
+                f.write(f"    Method: {name}\n")
+                f.write(f"      Input : {operation.input.signature()}\n")
+                f.write(f"      Output: {operation.output.signature()}\n")
